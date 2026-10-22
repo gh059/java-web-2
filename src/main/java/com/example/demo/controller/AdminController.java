@@ -5,7 +5,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.servlet.mvc.support.RedirectAttributes; // ★ RedirectAttributes import 필요할 수 있음
+import org.springframework.web.servlet.mvc.support.RedirectAttributes; 
 import com.example.demo.model.domain.Member;
 import com.example.demo.model.service.MemberService;
 
@@ -23,7 +23,11 @@ public class AdminController {
         return "admin/members"; // templates/admin/members.html (폴더 포함)
     }
 
-    // ── 여기에 가져오신 코드를 추가하세요 ──
+    // ★ [추가] JSON API를 fetch로 사용하는 회원 관리 화면 연결 메서드
+    @GetMapping("/members-api") // GET /admin/members-api
+    public String membersApi() {
+        return "admin/members-api"; // templates/admin/members-api.html 연결 (데이터는 API로 가져옴)
+    }
 
     @PostMapping("/members/{id}/role") // POST /admin/members/3/role
     public String changeRole(@PathVariable Long id, @RequestParam String role,

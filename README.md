@@ -52,3 +52,16 @@
 <img src="image-12.png" width="45%" alt="4 화면">
 </div>
 <br>
+
+## 7주차 회원 관리 REST API(JSON) 완료
+실습1: 첫 번째 API 생성하기
+실습2: 내 정보 API 생성하기
+실습3: postman 테스트
+실습4: 관리자 API 만들기
+<div align="center">
+<img src="image-13.png" width="45%" alt="1 화면">
+<img src="image-14.png" width="45%" alt="2 화면">
+<img src="image-15.png" width="45%" alt="3 화면">
+<img src="image-16.png" width="45%" alt="4 화면">
+</div>
+<br>

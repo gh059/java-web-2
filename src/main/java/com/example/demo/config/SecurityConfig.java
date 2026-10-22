@@ -2,16 +2,19 @@ package com.example.demo.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity; // ★ 1. import 추가
+import org.springframework.http.HttpStatus;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity; 
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.HttpStatusEntryPoint;
+import org.springframework.security.config.Customizer;
 
 @Configuration // 스프링 설정 클래스 등록
 @EnableWebSecurity // 스프링 시큐리티 활성화
-@EnableMethodSecurity // ★ 2. [6주차] 메서드 보안 활성화 : @PreAuthorize 사용
+@EnableMethodSecurity // [6주차] 메서드 보안 활성화 : @PreAuthorize 사용
 public class SecurityConfig {
 
     @Bean // 비밀번호 암호화 객체 등록 (BCrypt 해시)
@@ -25,8 +28,14 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth // 1. URL 접근 규칙 (인가)
                 .requestMatchers("/", "/hello", "/detailed_web.html",
                                  "/login", "/signup", "/error").permitAll()
+                .requestMatchers("/api/hello").permitAll()
+                .requestMatchers("/api/me").authenticated() 
                 .requestMatchers("/css/**", "/js/**", "/images/**", "/fonts/**").permitAll()
-                .requestMatchers("/admin/**").hasRole("ADMIN") // [6주차] 관리자만 접근 가능
+                .requestMatchers("/testdb").hasAnyRole("ADMIN", "MANAGER") // [6주차] 관리자, 매니저만 회원목록 접근 가능
+                
+                // [수정] 관리자 페이지 및 관리자 API 경로 모두 ADMIN 권한만 접근 가능
+                .requestMatchers("/admin/**", "/api/admin/**").hasRole("ADMIN") 
+                
                 .anyRequest().authenticated()) // 나머지 : 로그인 필요
             
             .formLogin(form -> form // 2. 폼 로그인 설정 (인증)
@@ -42,8 +51,14 @@ public class SecurityConfig {
             .rememberMe(remember -> remember // 4. 로그인 상태 유지 설정
                 .key("uniqueAndSecretKey")
                 .tokenValiditySeconds(60 * 60 * 24 * 7) // 7일 유지
-            );
-            
+            )
+            // 5. [7주차] REST API 설정
+            .httpBasic(Customizer.withDefaults()) // Postman : 요청마다 아이디·비밀번호 (Basic 인증)
+            .csrf(csrf -> csrf.ignoringRequestMatchers("/api/**")) // JSON API 는 CSRF 토큰 검사 제외
+            .exceptionHandling(ex -> ex.defaultAuthenticationEntryPointFor( // 로그인 안 한 API 요청 :
+                new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED), // 로그인 화면(302) 대신 401
+                request -> request.getRequestURI().startsWith("/api/")));
+
         return http.build();
     }
 }
