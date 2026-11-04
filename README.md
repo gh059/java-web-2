@@ -65,3 +65,17 @@
 <img src="image-16.png" width="45%" alt="4 화면">
 </div>
 <br>
+
+## 9주차 게시판(CRUD) + 본인 확인 완료
+실습1: 게시판 만들기
+실습2: 글쓰기 페이지 만들기
+실습3: 글쓰기 수정, 삭제(관리자 삭제) 만들기
+실습4: 404 오류 테스트
+<div align="center">
+<img src="image-17.png" width="45%" alt="1 화면">
+<img src="image-18.png" width="45%" alt="2 화면">
+<img src="image-19.png" width="45%" alt="3 화면">
+<img src="image-20.png" width="45%" alt="4 화면">
+<img src="image-21.png" width="45%" alt="5 화면">
+</div>
+<br>

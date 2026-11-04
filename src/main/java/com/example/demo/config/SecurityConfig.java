@@ -28,6 +28,7 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth // 1. URL 접근 규칙 (인가)
                 .requestMatchers("/", "/hello", "/detailed_web.html",
                                  "/login", "/signup", "/error").permitAll()
+                .requestMatchers("/board", "/board/{id:\\d+}").permitAll() // 게시판 목록·상세 : 누구나
                 .requestMatchers("/api/hello").permitAll()
                 .requestMatchers("/api/me").authenticated() 
                 .requestMatchers("/css/**", "/js/**", "/images/**", "/fonts/**").permitAll()
