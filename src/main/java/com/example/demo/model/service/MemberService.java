@@ -13,6 +13,8 @@ import com.example.demo.model.domain.Member;
 import com.example.demo.model.dto.MemberForm;
 import com.example.demo.model.repository.MemberRepository;
 import org.springframework.security.core.userdetails.*;
+import com.example.demo.model.repository.PostRepository;
+import com.example.demo.model.repository.CommentRepository;
 
 @Service
 public class MemberService implements UserDetailsService { // 로그인을 위한 인터페이스 제공
@@ -21,6 +23,11 @@ public class MemberService implements UserDetailsService { // 로그인을 위�
 
     @Autowired // SecurityConfig 에 등록한 BCryptPasswordEncoder 주입
     private PasswordEncoder passwordEncoder;
+
+    @Autowired // ① 필드 추가
+    private PostRepository postRepository;
+    @Autowired
+    private CommentRepository commentRepository;
 
     public Member signup(MemberForm form) { // 회원가입
         // ── [추가] Postman 등 API 요청 시 빈 값 검사 (required 대체) ──
@@ -104,7 +111,9 @@ public class MemberService implements UserDetailsService { // 로그인을 위�
         if (member.getUsername().equals(currentUsername)) {
             throw new IllegalArgumentException("자기 자신의 계정은 삭제할 수 없습니다.");
         }
-
+        if (postRepository.existsByAuthor(member) || commentRepository.existsByAuthor(member)) {
+            throw new IllegalArgumentException("작성한 글이나 댓글이 있는 회원은 삭제할 수 없습니다.");
+        }
         memberRepository.delete(member); // DELETE
     }
 }

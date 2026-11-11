@@ -1,34 +1,53 @@
 package com.example.demo.controller;
 
 import java.security.Principal;
-import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.data.domain.Page;
+
 import com.example.demo.model.domain.Post;
 import com.example.demo.model.dto.PostForm;
 import com.example.demo.model.service.PostService;
+import com.example.demo.model.service.CommentService;
 
 @Controller // 게시판 화면 컨트롤러
 @RequestMapping("/board") // 모든 URL 앞에 /board
 public class BoardController {
     @Autowired
     PostService postService;
+    @Autowired 
+    CommentService commentService;
 
-    @GetMapping // 목록 : GET /board (누구나)
-    public String list(Model model) {
-        List<Post> posts = postService.findAll();
-        model.addAttribute("posts", posts);
+    @GetMapping // 목록 : GET /board?page=0&type=titleContent&keyword=스프링 (누구나)
+    public String list(@RequestParam(defaultValue = "0") int page,
+                       @RequestParam(required = false) String type,
+                       @RequestParam(required = false) String keyword, 
+                       Model model) {
+        
+        // 서비스에 type과 keyword 전달
+        Page<Post> posts = postService.findPage(type, keyword, page);
+        
+        model.addAttribute("posts", posts.getContent());
+        model.addAttribute("page", posts);
+        model.addAttribute("type", type);       // 💡 검색 타입 유지용
+        model.addAttribute("keyword", keyword); // 💡 검색어 유지용
+        model.addAttribute("pageUrl", "/board");
+        
         return "board/list";
     }
 
-    // 💡 내가 쓴 글 모아 보기 기능 추가 (GET /board/my)
     @GetMapping("/my") 
-    public String myPosts(Principal principal, Model model) {
-        List<Post> posts = postService.findMyPosts(principal.getName());
-        model.addAttribute("posts", posts);
+    public String myPosts(
+            @RequestParam(defaultValue = "0") int page,
+            Principal principal, 
+            Model model) {
+        Page<Post> posts = postService.findMyPosts(principal.getName(), page);
+        model.addAttribute("posts", posts.getContent());
+        model.addAttribute("page", posts);
         model.addAttribute("listTitle", "내가 쓴 글"); // 목록 화면 제목 변경용
+        model.addAttribute("pageUrl", "/board/my"); // 💡 페이징 네비게이션 주소 지정
         return "board/list";
     }
 
@@ -36,6 +55,7 @@ public class BoardController {
     public String detail(@PathVariable Long id, Model model) {
         Post post = postService.read(id); // 조회수 증가 기능이 포함된 read() 사용
         model.addAttribute("post", post);
+        model.addAttribute("comments", commentService.findByPost(post)); // ② 댓글 목록 → 화면에 댓글 영역
         return "board/detail";
     }
 

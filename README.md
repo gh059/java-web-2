@@ -79,3 +79,16 @@
 <img src="image-21.png" width="45%" alt="5 화면">
 </div>
 <br>
+
+## 10주차 페이징 + 검색 + 댓글 완료
+실습1: 게시판 페이징 기능 만들기
+실습2: 게시판 검색 테스트하기
+실습3: 게시판 댓글 기능 추가하기
+실습4: 회원 삭제 테스트하기
+<div align="center">
+<img src="image-22.png" width="45%" alt="1 화면">
+<img src="image-23.png" width="45%" alt="2 화면">
+<img src="image-24.png" width="45%" alt="3 화면">
+<img src="image-25.png" width="45%" alt="4 화면">
+</div>
+<br>

@@ -11,6 +11,8 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional; 
 import org.springframework.web.server.ResponseStatusException; 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import com.example.demo.model.domain.Member;
 import com.example.demo.model.domain.Post;
 import com.example.demo.model.dto.PostForm;
@@ -24,10 +26,30 @@ public class PostService {
     @Autowired
     private MemberRepository memberRepository;
 
+    public static final int PAGE_SIZE = 10; // 한 페이지에 보여 줄 글 수
+    
     public List<Post> findAll() { // 전체 목록 (최신 글이 위로)
         return postRepository.findAll(Sort.by(Sort.Direction.DESC, "id"));
     }
 
+   // [10주차] 단계 : 검색 타입(titleContent, author, writer 등)에 따른 페이징 목록
+    public Page<Post> findPage(String type, String keyword, int page) {
+        PageRequest pageable = PageRequest.of(Math.max(page, 0), PAGE_SIZE, Sort.by(Sort.Direction.DESC, "id"));
+        
+        // 검색어가 없으면 전체 목록 반환
+        if (keyword == null || keyword.isBlank()) {
+            return postRepository.findAll(pageable);
+        }
+        
+        // 💡 작성자 검색인 경우 ("author" 또는 "writer" 모두 허용)
+        if ("author".equals(type) || "writer".equals(type)) {
+            return postRepository.searchByAuthor(keyword.trim(), pageable);
+        }
+        
+        // 기본값: 제목 + 내용 검색
+        return postRepository.search(keyword.trim(), pageable);
+    }
+    
     public Post findById(Long id) { // 글 1개 (없으면 404 → templates/error/404.html)
         return postRepository.findById(id)
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "글이 존재하지 않습니다."));
@@ -40,8 +62,9 @@ public class PostService {
         return post;
     }
 
-    public List<Post> findMyPosts(String username) {
-        return postRepository.findByAuthorUsernameOrderByIdDesc(username);
+    public Page<Post> findMyPosts(String username, int page) {
+        PageRequest pageable = PageRequest.of(Math.max(page, 0), PAGE_SIZE, Sort.by(Sort.Direction.DESC, "id"));
+        return postRepository.findByAuthorUsernameOrderByIdDesc(username, pageable);
     }
 
     public Post write(PostForm form, String username) { // 글쓰기 (작성자 = 로그인한 회원)
