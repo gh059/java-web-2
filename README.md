@@ -92,3 +92,14 @@
 <img src="image-25.png" width="45%" alt="4 화면">
 </div>
 <br>
+
+## 11주차 파일 업로드 + 신청 바구니 + 트랜잭션 완료
+실습1: 모집글 페이지 만들기
+실습2: 파일 업로드 크기 설정하기
+실습3: 신청 바구니 페이지 만들기
+<div align="center">
+<img src="image-26.png" width="45%" alt="1 화면">
+<img src="image-27.png" width="45%" alt="2 화면">
+<img src="image-28.png" width="45%" alt="3 화면">
+</div>
+<br>

@@ -5,16 +5,17 @@ import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Sort;
-import org.springframework.security.access.prepost.PreAuthorize; 
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.*;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import com.example.demo.model.domain.Member;
 import com.example.demo.model.dto.MemberForm;
-import com.example.demo.model.repository.MemberRepository;
-import org.springframework.security.core.userdetails.*;
-import com.example.demo.model.repository.PostRepository;
 import com.example.demo.model.repository.CommentRepository;
+import com.example.demo.model.repository.EnrollmentRepository;
+import com.example.demo.model.repository.MemberRepository;
+import com.example.demo.model.repository.PostRepository;
 
 @Service
 public class MemberService implements UserDetailsService { // 로그인을 위한 인터페이스 제공
@@ -28,6 +29,8 @@ public class MemberService implements UserDetailsService { // 로그인을 위�
     private PostRepository postRepository;
     @Autowired
     private CommentRepository commentRepository;
+    @Autowired // [11주차] 연습 ② : 신청 내역 확인용
+    private EnrollmentRepository enrollmentRepository;
 
     public Member signup(MemberForm form) { // 회원가입
         // ── [추가] Postman 등 API 요청 시 빈 값 검사 (required 대체) ──
@@ -47,8 +50,8 @@ public class MemberService implements UserDetailsService { // 로그인을 위�
     }
 
     // ── [추가] 문자열 빈 값/null 체크용 도우미 메서드 ──
-    private boolean isBlank(String value) { 
-        return value == null || value.isBlank(); 
+    private boolean isBlank(String value) {
+        return value == null || value.isBlank();
     }
 
     @Override // 로그인 시 시큐리티가 자동 호출
@@ -63,7 +66,7 @@ public class MemberService implements UserDetailsService { // 로그인을 위�
                 .roles(member.getRole())        // USER → ROLE_USER
                 .build();
     }
-    
+
     // MemberService : 로그인한 아이디로 회원 조회
     public Member findByUsername(String username) {
         return memberRepository.findByUsername(username)
@@ -76,7 +79,7 @@ public class MemberService implements UserDetailsService { // 로그인을 위�
     }
 
     // 관리자 페이지용: 전체 회원 조회
-    public List<Member> findAll() { 
+    public List<Member> findAll() {
         return memberRepository.findAll(Sort.by("id"));
     }
 
@@ -113,6 +116,10 @@ public class MemberService implements UserDetailsService { // 로그인을 위�
         }
         if (postRepository.existsByAuthor(member) || commentRepository.existsByAuthor(member)) {
             throw new IllegalArgumentException("작성한 글이나 댓글이 있는 회원은 삭제할 수 없습니다.");
+        }
+        // [11주차] 연습 ② : 신청 내역이 있는 회원은 삭제 막기 (신청 인원 계산이 어긋나지 않게)
+        if (enrollmentRepository.existsByMember(member)) {
+            throw new IllegalArgumentException("신청 내역이 있는 회원은 삭제할 수 없습니다.");
         }
         memberRepository.delete(member); // DELETE
     }

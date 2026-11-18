@@ -1,21 +1,23 @@
 package com.example.demo.model.service;
 
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Sort;
-import org.springframework.http.HttpStatus; 
-import org.springframework.security.access.AccessDeniedException; 
-import org.springframework.security.core.Authentication; 
-import org.springframework.security.core.context.SecurityContextHolder; 
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional; 
-import org.springframework.web.server.ResponseStatusException; 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 import com.example.demo.model.domain.Member;
 import com.example.demo.model.domain.Post;
 import com.example.demo.model.dto.PostForm;
+import com.example.demo.model.repository.EnrollmentRepository;
 import com.example.demo.model.repository.MemberRepository;
 import com.example.demo.model.repository.PostRepository;
 
@@ -25,40 +27,50 @@ public class PostService {
     private PostRepository postRepository;
     @Autowired
     private MemberRepository memberRepository;
+    @Autowired // [11주차] 연습 ② : 신청자가 있는지 확인용
+    private EnrollmentRepository enrollmentRepository;
+
+    @Autowired // [11주차] 단계 2 : 업로드 파일 저장소 (제공 코드)
+    private FileStore fileStore;
 
     public static final int PAGE_SIZE = 10; // 한 페이지에 보여 줄 글 수
-    
+
     public List<Post> findAll() { // 전체 목록 (최신 글이 위로)
         return postRepository.findAll(Sort.by(Sort.Direction.DESC, "id"));
     }
 
-   // [10주차] 단계 : 검색 타입(titleContent, author, writer 등)에 따른 페이징 목록
+    // [10주차] 단계 : 검색 타입(titleContent, author, writer 등)에 따른 페이징 목록
     public Page<Post> findPage(String type, String keyword, int page) {
         PageRequest pageable = PageRequest.of(Math.max(page, 0), PAGE_SIZE, Sort.by(Sort.Direction.DESC, "id"));
-        
+
         // 검색어가 없으면 전체 목록 반환
         if (keyword == null || keyword.isBlank()) {
             return postRepository.findAll(pageable);
         }
-        
-        // 💡 작성자 검색인 경우 ("author" 또는 "writer" 모두 허용)
+
+        // 작성자 검색인 경우 ("author" 또는 "writer" 모두 허용)
         if ("author".equals(type) || "writer".equals(type)) {
             return postRepository.searchByAuthor(keyword.trim(), pageable);
         }
-        
+
         // 기본값: 제목 + 내용 검색
         return postRepository.search(keyword.trim(), pageable);
     }
-    
+
     public Post findById(Long id) { // 글 1개 (없으면 404 → templates/error/404.html)
         return postRepository.findById(id)
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "글이 존재하지 않습니다."));
     }
 
+    // [11주차] 단계 3 : 바구니에 담긴 글들 (번호 목록으로 한 번에)
+    public List<Post> findAllById(Collection<Long> ids) {
+        return postRepository.findAllById(ids); // SELECT ... WHERE id IN (?, ?, ?)
+    }
+
     @Transactional
     public Post read(Long id) {
         Post post = findById(id);
-        post.setViewCount(post.getViewCount() + 1); // 또는 post.increaseViewCount();
+        post.setViewCount(post.getViewCount() + 1);
         return post;
     }
 
@@ -70,24 +82,30 @@ public class PostService {
     public Post write(PostForm form, String username) { // 글쓰기 (작성자 = 로그인한 회원)
         validate(form);
         Member author = memberRepository.findByUsername(username)
-        .orElseThrow(() -> new IllegalArgumentException("회원이 존재하지 않습니다."));
+            .orElseThrow(() -> new IllegalArgumentException("회원이 존재하지 않습니다."));
         Post post = new Post();
         post.setTitle(form.getTitle().trim());
         post.setContent(form.getContent());
         post.setAuthor(author); // 작성자는 화면이 아니라 서버가 정한다
         post.setCreatedAt(LocalDateTime.now());
+        post.setCapacity(form.getCapacity()); // [11주차] 단계 1 : 정원 (비우면 null = 일반 글)
+        post.setPosterFile(fileStore.save(form.getPoster())); // [11주차] 단계 2 : 포스터 저장 → 파일 이름 (없으면 null)
         return postRepository.save(post); // INSERT
     }
 
     private void validate(PostForm form) { // 빈 값 검사 (5주차 회원가입과 같은 방식)
+        // [11주차] 단계 1 : 모집 인원은 1~100명
+        if (form.getCapacity() != null && (form.getCapacity() < 1 || form.getCapacity() > 100)) {
+            throw new IllegalArgumentException("모집 인원은 1~100명으로 입력하세요.");
+        }
         if (form.getTitle() == null || form.getTitle().isBlank()
             || form.getContent() == null || form.getContent().isBlank()) {
-                throw new IllegalArgumentException("제목과 내용을 모두 입력하세요.");
-            }
-            if (form.getTitle().trim().length() > 100) {
-                throw new IllegalArgumentException("제목은 100자까지 입력할 수 있습니다.");
-            }
+            throw new IllegalArgumentException("제목과 내용을 모두 입력하세요.");
         }
+        if (form.getTitle().trim().length() > 100) {
+            throw new IllegalArgumentException("제목은 100자까지 입력할 수 있습니다.");
+        }
+    }
 
     public Post findForEdit(Long id) { // 수정 화면에 보여 줄 글
         Post post = findById(id);
@@ -107,7 +125,14 @@ public class PostService {
     public void delete(Long id) { // 글 삭제
         Post post = findById(id);
         if (!isAdmin()) checkWriter(post);
+
+        // [11주차] 연습 ② : 신청자가 있으면 삭제 막기 (외래 키 500 대신 안내 메시지)
+        if (enrollmentRepository.existsByPost(post)) {
+            throw new IllegalStateException("신청자가 있는 모집글은 삭제할 수 없습니다.");
+        }
+
         postRepository.delete(post); // DELETE
+        fileStore.delete(post.getPosterFile()); // [11주차] 연습 ② : 포스터 파일도 삭제 (DB 삭제 성공 후)
     }
 
     private void checkWriter(Post post) { // 로그인한 사람이 글쓴이인지 → 아니면 403

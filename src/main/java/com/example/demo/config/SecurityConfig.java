@@ -29,6 +29,7 @@ public class SecurityConfig {
                 .requestMatchers("/", "/hello", "/detailed_web.html",
                                  "/login", "/signup", "/error").permitAll()
                 .requestMatchers("/board", "/board/{id:\\d+}").permitAll() // 게시판 목록·상세 : 누구나
+                .requestMatchers("/uploads/**").permitAll() // [11주차] 포스터 이미지 : 누구나 (올리기는 글쓰기라서 로그인)
                 .requestMatchers("/api/hello").permitAll()
                 .requestMatchers("/api/me").authenticated() 
                 .requestMatchers("/css/**", "/js/**", "/images/**", "/fonts/**").permitAll()
