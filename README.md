@@ -103,3 +103,13 @@
 <img src="image-28.png" width="45%" alt="3 화면">
 </div>
 <br>
+
+## 12주차 WebSocket 실시간 알림 완료
+실습1: WebSocket 켜기
+실습2: 남은 자리 메세지 기능 추가하기
+실습3: 알림 이벤트 추가하기
+<div align="center">
+<img src="image-29.png" width="45%" alt="1 화면">
+<img src="image-30.png" width="45%" alt="2 화면">
+</div>
+<br>
